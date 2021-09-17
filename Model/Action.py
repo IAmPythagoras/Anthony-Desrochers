@@ -1,5 +1,6 @@
 #This class will represent a single action and specify if oGCD, GCD, effects it adds, etc.
 
+import Player
 
 class Ability:
 
@@ -19,6 +20,16 @@ class BLMAbility(Ability):
         super().__init__(id, Name, GCD, CastTime, RecastTime, Potency, ManaCost)
         self.IsFire = IsFire    #if fire spell
         self.IsIce = IsIce  #If ice spell
+
+    def Cast(self, Player):
+        tempSpell = BLMAbility(self.id, self.Name, self.GCD, self.CastTime,self.RecastTime, self.Potency, self.ManaCost, self.IsFire, self.IsIce)
+        
+        for Effect in Player.EffectList:
+            Effect(Player, tempSpell)
+
+
+
+
 
     
 

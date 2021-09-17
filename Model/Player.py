@@ -1,6 +1,6 @@
 #This class will represent a player with a job, etc.
 #It will first be assumed to only be a BLM
-import Action.Ability
+import Action
 
 class player:
 
@@ -9,10 +9,12 @@ class player:
         self.GCDTimer = GCDTimer
         self.ActionSet = ActionSet  #List of actions to be performed in order
         self.EffectList = []
+        self.Casting = False
+        self.oGCDLock = False
 
 
 
-class BlackMage(Player):
+class BlackMage(player):
 
     def __init__(self, GCDTimer, ActionSet):
         super().__init__(GCDTimer, ActionSet)
@@ -21,38 +23,41 @@ class BlackMage(Player):
         self.Enochian = False
         self.T3Prock = False
         self.F3Prock = False
+        self.SharpCastStack = 0
         self.PolyglotStack = 0
         self.TripleCastStack = 0
         self.SwiftCastStack = 0
         self.T3Timer = 0
+        self.F3Timer = 0
+        self.AFUITimer = 0
+
+
         
 
 
-    def PerformActionSetBlackMage(self):
-        #This function will perform the given ActionSet and compute PPS for this given rotation/opener
+    def PerformActionSetBlackMage(self, timeUnit, TimeLimit):
 
-        totalPotency = 0 #Keep track of the total potency done so far
-        timer = 0 #Timer of the fight
-        numberGCD = 0
+        timer = 0
+        spellCounter = 0
 
-        for Spell in self.ActionSet:
-            #Spell here represents an Ability
+        while(timer < TimeLimit):
 
-            totalPotency += Spell.Potency
+            nextSpell = self.ActionSet[spellCounter]
 
-            if (Spell.GCD):#If the spell is a GCD
+            if(not self.Casting):
+                #Will have to check if next spell if oGCD or GCD
+                if(not self.oGCDLock):
+                    #If not locked by oGCD
+                    #Then just have to check if we are in between two GCD
+                    if(nextSpell.GCD):
+                        #If spell is a GCD
+                    else:
+                        #spell is an oGCD
+                        
 
-                if (Spell.CastTime < self.GCDTimer): timer+=self.GCDTimer#
-                else: timer+= Spell.CastTime
-
-            else:
-                timer+=0.75
 
 
-            #Will check for effect
-
-            for Effect in self.EffectList:
-                #Do each effect
+        
 
             
 
