@@ -4,14 +4,15 @@
 #Each function will be called in order
 
 
-from Model.Player import BlackMage, player
-from Action import *
+import Action
+import Job
 import Player
 
 
 #Black Mage
 
-def AstralFire(Player : BlackMage, Stack, Spell : BLMAbility):
+def AstralFire(Player, Spell):
+    Stack = Player.AstralFireStack
 
     if (Spell.IsFire):
         Spell.ManaCost*=2#Update Mana cost
@@ -33,8 +34,8 @@ def AstralFire(Player : BlackMage, Stack, Spell : BLMAbility):
             Spell.ManaCost*=0
             Spell.CastTime*=0.5
 
-def UmbralIce(Player : BlackMage, Stack, Spell : BLMAbility):
-
+def UmbralIce(Player, Spell):
+    Stack = Player.UmbralIceStack
     if(Spell.IsIce):
         if (Stack == 1):
             Spell.ManaCost *= 0.75
