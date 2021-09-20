@@ -32,5 +32,13 @@ y.t()
 x.tw()
 
 
+l = [allo, hey]
+
+l.remove(hey)
+l.append(allo)
+
+print(l)
+
+
 
 

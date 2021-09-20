@@ -50,25 +50,25 @@ def UmbralIce(Player, Spell):
             Spell.CastTime *= 0.5
             Spell.Potency *= 0.7
 
-def LeyLines(Player, Spell):
+def LeyLinesEffect(Player, Spell):
     Spell.CastTime*=0.85
     Spell.RecastTime*=0.85
 
-def Enochian(Player, Spell):
+def EnochianEffect(Player, Spell):
     Spell.Potency*=1.15
 
-def TripleCast(Player,Spell):
+def TripleCastEffect(Player,Spell):
     Spell.CastTime=0
     Player.TripleCastStack-=1
 
     if (Player.TripleCastStack == 0):
-        Player.EffectList.remove(TripleCast)
+        Player.EffectList.remove(TripleCastEffect)
 
-def SwiftCast(Player, Spell):
+def SwiftCastEffect(Player, Spell):
     Spell.CastTime=0
-    Player.EffectList.remove(SwiftCast)
+    Player.EffectList.remove(SwiftCastEffect)
 
-def SharpCast(Player,Spell):
+def SharpCastEffect(Player,Spell):
 
     if(Spell.Id == 0):#Id 0 is T3
         Player.T3Prock = 1
@@ -77,7 +77,7 @@ def SharpCast(Player,Spell):
         Player.F3Prock == 1
         Player.SharpCastStack = 0
 
-def T3Prock(Player, Spell):
+def T3ProckEffect(Player, Spell):
 
     if(Spell.Id == 0):
         Spell.CastTime = 0
@@ -85,19 +85,20 @@ def T3Prock(Player, Spell):
         Spell.ManaCost = 0
         Player.T3Prock = 0
 
-def F3Prock(Player, Spell):
+def F3ProckEffect(Player, Spell):
 
     if (Spell.Id == 2):
         Spell.CastTime = 0
         Spell.ManaCost = 0
 
-def Transpose(Player, Spell):
-    if(Player.UmbralIceStack >= 1):
-        Player.UmbralIceStack = 0
-        Player.AstralFireStack = 1
-    elif(Player.AstralFireStack >= 1):
-        Player.UmbralIceStack = 1
-        Player.AstralFireStack = 0
+#Function called to remove effect
+
+def CheckLeyLines(Player):
+    if(Player.LeyLinesTimer <= 0):
+        Player.EffectList.remove(LeyLinesEffect)
+        return CheckLeyLines
+
+
 
 #ACTION.PY
 
@@ -156,6 +157,7 @@ class player:
         self.oGCDLock = False
         self.GCDLock = False
         self.TotalMane = 10000
+        self.EffectCDList = []
 
 
 
@@ -181,6 +183,7 @@ class BlackMage(player):
         self.SwiftCastStack = 0
         self.T3Timer = 0
         self.F3Timer = 0
+        self.LeyLinesTimer = 0
 
         #Ability CD
         self.LeyLinesCD = 0
@@ -205,14 +208,16 @@ class BlackMage(player):
 
 
             nextSpell = self.ActionSet[spellCounter]
-            print("################################################################################################################################")
-            print("Next spell " + str(nextSpell.id))
-            print('Timer : ' + str(timer))
-            print("AstralFire " + str(self.AstralFireStack))
-            print("UmbralIce " + str(self.UmbralIceStack))
+
             if(nextSpell.GCD):
                 #If spell is a GCD
                 if(not self.GCDLock):
+                    print("################################################################################################################################")
+                    print("Next spell " + str(nextSpell.id))
+                    print('Timer : ' + str(timer))
+                    print("AstralFire " + str(self.AstralFireStack))
+                    print("UmbralIce " + str(self.UmbralIceStack))
+                    print("Effect list : " + str(self.EffectList))
                     tempSpell = nextSpell.Cast(self)
 
                     print(str(tempSpell))
@@ -231,23 +236,38 @@ class BlackMage(player):
 
 
             else:
+                print("################################################################################################################################")
+                print("Next spell " + str(nextSpell.id))
+                print('Timer : ' + str(timer))
+                print("AstralFire " + str(self.AstralFireStack))
+                print("UmbralIce " + str(self.UmbralIceStack))
+                print("Effect list : " + str(self.EffectList))
                 #spell is an oGCD
                 tempSpell = nextSpell.Cast(self)
                 TotalPotency += tempSpell.Potency
                 timer += tempSpell.CastTime#For oGCD, set to about 0.5s (more like animation lock)
 
-                timeBeforeNextGCD = max(0, timeBeforeNextGCD - tempSpell.CastingTime)
+                timeBeforeNextGCD = max(0, timeBeforeNextGCD - tempSpell.CastTime)
 
                 if (spellCounter >= len(self.ActionSet)) : 
                     #timer  = TimeLimit
                     break #If no more spell,we out
-
+                spellCounter+=1
+                
             if (timeBeforeNextGCD <= 0):
                 self.GCDLock = False
             else:
                 timeBeforeNextGCD-=0.01
 
             timer+=0.01
+
+            rList = []
+            for Check in self.EffectCDList:
+                rList.append(Check(self))
+
+            for i in rList:
+                self.EffectCDList.remove(i)
+
 
         return TotalPotency/timer
 
@@ -278,9 +298,50 @@ def AddUmbralIce1(Player):
 
 def AddUmbralHeartStack(Player):
     Player.UmbralHeartStack = 3
-
+    
 def RemovePolyGlotStack(Player):
     Player.PolyglotStack-=1
+
+def Enochian(Player):
+    Player.Enochian = True
+    Player.EnochianCD = 30
+    Player.EffectList.append(EnochianEffect)
+
+def SwiftCast(Player):
+    Player.SwiftCastCD = 60
+    Player.SwiftCasStack = 1
+    Player.EffectList.append(SwiftCastEffect)
+
+def TripleCast(Player):
+    Player.TripleCastCD = 60
+    Player.TripleCastStack = 3
+    Player.EffectList.append(TripleCastEffect)
+
+def LeyLines(Player):
+    Player.LeyLinesCD = 90
+    Player.LeyLinesTimer = 30
+    Player.EffectList.append(LeyLinesEffect)
+
+def SharpCast(Player):
+    Player.SharpCastCD = 30
+    Player.SharpCastStack = 1
+    Player.EffectList.append(SharpCastEffect)
+
+def ManaFront(Player):
+    Player.ManaFrontCD = 180
+    #Add mana
+
+def Transpose(Player):
+    
+    if(Player.UmbralIceStack >= 1):
+        Player.UmbralIceStack = 0
+        Player.AstralFireStack = 1
+    elif(Player.AstralFireStack >= 1):
+        Player.UmbralIceStack = 1
+        Player.AstralFireStack = 0
+
+
+
 
 #BLMSPELL
 #Fire Spell
@@ -300,7 +361,7 @@ B4 = BLMAbility(8, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack)
 
 Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, RemovePolyGlotStack)
 
-#BoostinAbility
+#Boosting Ability
 
 Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian)
 Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast)
@@ -317,7 +378,7 @@ BLM = BlackMage(2.17, List)
 
 #####
 
-print(BLM.PerformActionSetBlackMage(0.1, 10000))
+print(BLM.PerformActionSetBlackMage(0.1, 30))
 
 
 
