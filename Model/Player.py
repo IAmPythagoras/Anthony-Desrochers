@@ -6,18 +6,19 @@
 
 #EFFECT.PY
 
+
 def AstralFire(Player, Spell):
     Stack = Player.AstralFireStack
 
     if (Spell.IsFire):
         if(Stack == 1): 
-            Spell.ManaCost*=2#Update Mana cost
+            if (Spell.id != 4) : Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.4#Update Damage
         elif(Stack == 2): 
-            Spell.ManaCost*=2#Update Mana cost
+            if (Spell.id != 4) : Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.6#Update Damage
         elif (Stack == 3): 
-            Spell.ManaCost*=2#Update Mana cost
+            if (Spell.id != 4) : Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.8#Update Damage
     elif (Spell.IsIce):
         if(Stack == 1): 
@@ -74,14 +75,14 @@ def SharpCastEffect(Player,Spell):
 
     if(Spell.id == 16):#Id 0 is T3
         Player.T3Prock = 1
-        Player.EffectList.append(T3ProckEffect)
         Player.SharpCastStack = 0
         Player.EffectList.remove(SharpCastEffect)
+        return T3ProckEffect
     elif(Spell.id == 0): #Fire 1
         Player.F3Prock == 1
-        Player.EffectList.append(F3ProckEffect)
         Player.SharpCastStack = 0
         Player.EffectList.remove(SharpCastEffect)
+        return F3ProckEffect
 
 def T3ProckEffect(Player, Spell):
 
@@ -92,14 +93,23 @@ def T3ProckEffect(Player, Spell):
         Player.T3Prock = 0
         Player.EffectList.remove(T3ProckEffect)
         
-
 def F3ProckEffect(Player, Spell):
 
     if (Spell.id == 2):
         Spell.CastTime = 0
         Spell.ManaCost = 0
 
-#Function called to remove effect
+def UmbralHeartEffect(Player, Spell):
+    if(Player.UmbralHeartStack >= 1 and Spell.IsFire and Player.AstralFireStack >= 1):
+        if(Spell.id != 5):
+            Spell.ManaCost/=2
+            Player.UmbralHeartStack-=1
+    elif(Player.UmbralHeartStack <= 0):
+        Player.UmbralHeartStack = 0
+        Player.EffectList.remove(UmbralHeartEffect)
+        
+
+ #Function called to remove effect
 
 def CheckLeyLines(Player):
     if(Player.LeyLinesTimer <= 0):
@@ -113,42 +123,89 @@ def Thunder3DotCheck(Player):
         Player.T3Timer = 0
         return Thunder3DotCheck
 
+
+#RequirementSpellCheck
+#Checks requirement, and subtratcs whatever ressources was used
+def ManaCheck(Player, Spell):
+    if (Player.Mana >= Spell.ManaCost):
+        print("taking mana : " + str(Player.Mana) + " : " +str(Spell.ManaCost))
+        Player.Mana -= Spell.ManaCost
+        print("mana taken: " + str(Player.Mana) + " : " +str(Spell.ManaCost))
+        return True
+    return False
+
+def PolyglotCheck(Player, Spell):
+    if (Player.PolyglotStack >=1):
+        Player.PolyglotStack -= 1
+        return True
+    return False
+
+def FireSpellCheck(Player, Spell):
+    print("Hey brother")
+    if (Player.AstralFireStack >= 1 and Player.Enochian and ManaCheck(Player, Spell)):
+        return True
+    return False
+
+def IceSpellCheck(Player, Spell):
+    if (Player.UmbralIceStack >= 1 and Player.Enochian and ManaCheck(Player, Spell)):
+        return True
+    return False
+
+
+
 #ACTION.PY
 
 class Ability:
 
-    def __init__(self, id, GCD, CastTime, RecastTime, Potency, ManaCost, Effect):
+    def __init__(self, id, GCD, CastTime, RecastTime, Potency, ManaCost, Effect, RequirementCheck):
         self.id = id #Id of spell
         self.GCD = GCD #True if is a GCD
         self.CastTime = CastTime #Castime of the spell
         self.Potency = Potency
         self.ManaCost = ManaCost
         self.RecastTime = RecastTime
-        self.Effect = Effect
+        self.EffectOnCast = Effect
+        self.RequirementCheck = RequirementCheck
 
     def __str__(self):
         return "Potency : " + str(self.Potency) + " CastTime : " + str(self.CastTime) + " RecastTime : " + str(self.RecastTime) + " ManaCost : " + str(self.ManaCost)
 
 class BLMAbility(Ability):
 
-    def __init__(self, id, GCD, CastTime,RecastTime, Potency, ManaCost, IsFire, IsIce, Effect):
-        super().__init__(id, GCD, CastTime, RecastTime, Potency, ManaCost, Effect)
+    def __init__(self, id, GCD, CastTime,RecastTime, Potency, ManaCost, IsFire, IsIce, Effect, RequirementCheck):
+        super().__init__(id, GCD, CastTime, RecastTime, Potency, ManaCost, Effect, RequirementCheck)
         self.IsFire = IsFire    #if fire spell
         self.IsIce = IsIce  #If ice spell
 
     def Cast(self, Player):
-        tempSpell = BLMAbility(self.id, self.GCD, self.CastTime,self.RecastTime, self.Potency, self.ManaCost, self.IsFire, self.IsIce, self.Effect)
-        
-        print("Inside Cast : " + str(tempSpell))
+        tempSpell = BLMAbility(self.id, self.GCD, self.CastTime,self.RecastTime, self.Potency, self.ManaCost, self.IsFire, self.IsIce, self.EffectOnCast, self.RequirementCheck)
+
+        newEffect = []
 
         for Effect in Player.EffectList:
-            Effect(Player, tempSpell)
+            newEffect.append(Effect(Player, tempSpell))
 
-        print("Inside Cast2 : " + str(tempSpell))
+
+        if(not (tempSpell.RequirementCheck(Player, tempSpell))):
+            print("Does not meet requirement to cast the spell. Aborting")
+            print("Was trying to cast : " + str(self.id))
+            print("Mana : " + str(Player.Mana))
+            print(tempSpell)
+            exit()
+
+        for effect in newEffect:
+            if (effect != None):
+                Player.EffectList.append(effect)
+
+
+        #Check if has enough mana, and if yes update mana. If not enough mana, we end the program.
+
+        tempSpell.EffectOnCast(Player)
+
+        print(" Spell information : " + str(tempSpell))
 
         #Spell has now been updated with every effect
         #Add new effect to player
-        tempSpell.Effect(Player)
 
 
         return tempSpell
@@ -233,6 +290,7 @@ class BlackMage(player):
         spellCounter = 0
         TotalPotency = 0
         timeBeforeNextGCD = 0
+        PolyglotStackCountDown = 0
         while(timer < TimeLimit):
 
 
@@ -248,11 +306,12 @@ class BlackMage(player):
                     print("UmbralIce " + str(self.UmbralIceStack))
                     print("Effect list : " + str(self.EffectList))
                     print("DOT List : " + str(self.DOTList))
+                    print("Mana Left : " + str(self.Mana))
                     tempSpell = nextSpell.Cast(self)
                     self.updateCD(tempSpell.CastTime)
                     self.updateTimer(tempSpell.CastTime)
                     NextServerTick -= tempSpell.CastTime
-                    print(str(tempSpell))
+                    #print(str(tempSpell))
 
                     TotalPotency += tempSpell.Potency #Add potency of spell
                     timer+= tempSpell.CastTime #Fast forward to when next action is possible
@@ -275,6 +334,8 @@ class BlackMage(player):
                 print("UmbralIce " + str(self.UmbralIceStack))
                 print("Effect list : " + str(self.EffectList))
                 print("DOT List : " + str(self.DOTList))
+                print("Mana Left : " + str(self.Mana))
+
                 #spell is an oGCD
                 tempSpell = nextSpell.Cast(self)
                 TotalPotency += tempSpell.Potency
@@ -306,7 +367,7 @@ class BlackMage(player):
             #print("LeyLines Timer : " + str(self.LeyLinesTimer))
             for i in rList:
                 if (i != None):
-                    print(str(i) + "hhhhhhhh")
+                    #print(str(i) + "hhhhhhhh")
                     self.EffectCDList.remove(i)
 
 
@@ -315,12 +376,18 @@ class BlackMage(player):
                 #Do thing
                 NextServerTick = 3 - (timer %3)
 
+                PolyglotStackCountDown+=1
+
+                if (PolyglotStackCountDown == 10):
+                    PolyglotStackCountDown = 0
+                    self.PolyglotStack = 1
+
                 if (self.UmbralIceStack == 1):
-                    self.Mana +=3200
+                    self.Mana = min(10000, self.Mana + 3200)
                 elif (self.UmbralIceStack == 2):
-                    self.Mana += 4700
+                    self.Mana = min(10000, self.Mana + 4700)
                 elif(self.UmbralIceStack == 3):
-                    self.Mana += 6200
+                    self.Mana = min(10000, self.Mana + 6200)
 
                 for DOT in self.DOTList:
                     tempDOT = DOT.Cast(self)
@@ -356,9 +423,7 @@ def AddUmbralIce1(Player):
 
 def AddUmbralHeartStack(Player):
     Player.UmbralHeartStack = 3
-    
-def RemovePolyGlotStack(Player):
-    Player.PolyglotStack-=1
+    Player.EffectList.append(UmbralHeartEffect)
 
 def Enochian(Player):
     Player.Enochian = True
@@ -388,6 +453,7 @@ def SharpCast(Player):
 
 def ManaFront(Player):
     Player.ManaFrontCD = 180
+    Player.Mana += 3000
     #Add mana
 
 def Transpose(Player):
@@ -404,50 +470,56 @@ def Thunder3(Player):
     Player.T3Timer = 24
     if(not( T3DOT in Player.EffectCDList)) : Player.EffectCDList.append(Thunder3DotCheck)
 
+def DespairCast(Player):
+    AddAstralFire3(Player)
+    Player.Mana = 0
+
 
 
 #Null Ability (wait)
 
-Wait = BLMAbility(-1, True, 2.19, 2.19, 0, 0, False, False, empty)
+Wait = BLMAbility(-1, True, 2.19, 2.19, 0, 0, False, False, empty, ManaCheck)
 
 #BLMSPELL
 #Fire Spell
-F1 = BLMAbility(0, True, 2.19, 2.19, 180, 800, True, False, AddAstralFire1)
-F2 = BLMAbility(1, True, 2.17, 2.17, 140, 200, True, False, empty)#Will not used, so whatever
-F3 = BLMAbility(2, True, 3.07, 2.19, 240, 2000, True, False, AddAstralFire3)
-F4 = BLMAbility(3, True, 2.46, 2.19, 300, 800, True, False, empty)
-Despair = BLMAbility(4, True, 2.63, 2.19, 380, -1, True, False, AddAstralFire3)
+F1 = BLMAbility(0, True, 2.19, 2.19, 180, 800, True, False, AddAstralFire1, ManaCheck)
+F2 = BLMAbility(1, True, 2.17, 2.17, 140, 200, True, False, empty, ManaCheck)#Will not used, so whatever
+F3 = BLMAbility(2, True, 3.07, 2.19, 240, 2000, True, False, AddAstralFire3, ManaCheck)
+F4 = BLMAbility(3, True, 2.46, 2.19, 300, 800, True, False, empty, FireSpellCheck)
+Despair = BLMAbility(4, True, 2.63, 2.19, 380, 800, True, False, DespairCast, FireSpellCheck)
 
 #Ice Spell
-B1 = BLMAbility(5, True, 2.19, 2.19, 180, 400, False, True, AddUmbralIce1)#Not used so whatever
-B2 = BLMAbility(6, True, 2.17, 2.17, 140, 200, False, True, empty)#AOE so not used
-B3 = BLMAbility(7, True, 3.07, 2.19, 240, 800, False, True, AddUmbralIce3)
-B4 = BLMAbility(8, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack)
+B1 = BLMAbility(5, True, 2.19, 2.19, 180, 400, False, True, AddUmbralIce1, ManaCheck)#Not used so whatever
+B2 = BLMAbility(6, True, 2.17, 2.17, 140, 200, False, True, empty, ManaCheck)#AOE so not used
+B3 = BLMAbility(7, True, 3.07, 2.19, 240, 800, False, True, AddUmbralIce3, ManaCheck)
+B4 = BLMAbility(8, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack, IceSpellCheck)
 
 #DOT
 
-T3 = BLMAbility(16, True, 2.19, 2.19, 40, 400, False, False, Thunder3)
-T3DOT = BLMAbility(17, False, 0, 0, 40, 0, False, False, empty)
+T3 = BLMAbility(16, True, 2.19, 2.19, 40, 400, False, False, Thunder3, ManaCheck)
+T3DOT = BLMAbility(17, False, 0, 0, 40, 0, False, False, empty, ManaCheck)
 #Special Damage Spell
 
-Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, RemovePolyGlotStack)
+Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, empty, PolyglotCheck)
 
 #Boosting Ability
 
-Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian)
-Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast)
-Triple = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, TripleCast)
-Sharp = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, SharpCast)
-Ley = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, LeyLines)
-Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose)
+Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian, ManaCheck)
+Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast, ManaCheck)
+Triple = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, TripleCast, ManaCheck)
+Sharp = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, SharpCast, ManaCheck)
+Ley = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, LeyLines, ManaCheck)
+Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose, ManaCheck)
+Mana = BLMAbility(18, False, 0.5, 0, 0, 0, False, False, ManaFront, ManaCheck)
 
 
 #ENDBLMSPELL
 
-JpOpener = [Sharp, F3, Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, F4, Despair, B3, B4]
-NoB4Opener = [Sharp, B3, Eno, T3,  F3, Triple, F4, F4, Ley, F4, Swift, F4, F4, Despair, T3, Eno,  F4, Despair, B3, Xeno, B4]
+JpOpener = [Sharp, F3, Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, Mana,  F4, Despair, B3, B4]
+NoB4Opener = [Sharp, B3, Eno, T3,  F3, Triple, F4, F4, Ley, F4, Swift, F4, F4, Despair, T3, Mana,  F4, Despair, B3, Xeno, B4]
 list = [T3, Sharp, T3, T3, F1, F1, F1]
-BLM = BlackMage(2.19, JpOpener)
+Rotation = [Eno, B3, Sharp, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair]
+BLM = BlackMage(2.19, Rotation)
 
 #####
 

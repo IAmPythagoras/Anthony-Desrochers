@@ -34,7 +34,11 @@ x.tw()
 
 l = [allo, hey]
 
-print(allo in l)
+l = [1,2,3]
+
+for i in l:
+    if (i == 2) : l.append(4)
+    print(i)
 
 
 
