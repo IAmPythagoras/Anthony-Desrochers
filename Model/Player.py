@@ -10,12 +10,14 @@ def AstralFire(Player, Spell):
     Stack = Player.AstralFireStack
 
     if (Spell.IsFire):
-        Spell.ManaCost*=2#Update Mana cost
         if(Stack == 1): 
+            Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.4#Update Damage
         elif(Stack == 2): 
+            Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.6#Update Damage
         elif (Stack == 3): 
+            Spell.ManaCost*=2#Update Mana cost
             Spell.Potency*=1.8#Update Damage
     elif (Spell.IsIce):
         if(Stack == 1): 
@@ -70,24 +72,30 @@ def SwiftCastEffect(Player, Spell):
 
 def SharpCastEffect(Player,Spell):
 
-    if(Spell.Id == 0):#Id 0 is T3
+    if(Spell.id == 16):#Id 0 is T3
         Player.T3Prock = 1
+        Player.EffectList.append(T3ProckEffect)
         Player.SharpCastStack = 0
-    elif(Spell.Id == 1): #Fire 1
+        Player.EffectList.remove(SharpCastEffect)
+    elif(Spell.id == 0): #Fire 1
         Player.F3Prock == 1
+        Player.EffectList.append(F3ProckEffect)
         Player.SharpCastStack = 0
+        Player.EffectList.remove(SharpCastEffect)
 
 def T3ProckEffect(Player, Spell):
 
-    if(Spell.Id == 0):
+    if(Spell.id == 16):
         Spell.CastTime = 0
         Spell.Potency = 320
         Spell.ManaCost = 0
         Player.T3Prock = 0
+        Player.EffectList.remove(T3ProckEffect)
+        
 
 def F3ProckEffect(Player, Spell):
 
-    if (Spell.Id == 2):
+    if (Spell.id == 2):
         Spell.CastTime = 0
         Spell.ManaCost = 0
 
@@ -96,9 +104,14 @@ def F3ProckEffect(Player, Spell):
 def CheckLeyLines(Player):
     if(Player.LeyLinesTimer <= 0):
         Player.EffectList.remove(LeyLinesEffect)
+        Player.LeyLinesTimer = 0
         return CheckLeyLines
 
-
+def Thunder3DotCheck(Player):
+    if(Player.T3Timer <= 0):
+        Player.DOTList.remove(T3DOT)
+        Player.T3Timer = 0
+        return Thunder3DotCheck
 
 #ACTION.PY
 
@@ -156,8 +169,9 @@ class player:
         self.Casting = False
         self.oGCDLock = False
         self.GCDLock = False
-        self.TotalMane = 10000
+        self.Mana = 10000
         self.EffectCDList = []
+        self.DOTList = []
 
 
 
@@ -195,11 +209,26 @@ class BlackMage(player):
         self.TranspodeCD = 0
 
 
+    def updateCD(self, time):
+        if (self.LeyLinesCD > 0) : self.LeyLinesCD = max(0,self.LeyLinesCD - time)
+        if (self.SharpCastCD > 0) :self.SharpCastCD = max(0,self.SharpCastCD - time)
+        if (self.TripleCastCD > 0) :self.TripleCastCD = max(0,self.TripleCastCD - time)
+        if (self.SwiftCastCD > 0) :self.SwiftCastCD = max(0,self.SwiftCastCD - time)
+        if (self.EnochianCD > 0) :self.EnochianCD = max(0,self.EnochianCD - time)
+        if (self.ManaFrontCD > 0) :self.ManaFrontCD = max(0,self.ManaFrontCD - time)
+        if (self.TranspodeCD > 0) :self.TranspodeCD = max(0,self.TranspodeCD - time)
+
+    def updateTimer(self, time):
+         if (self.LeyLinesTimer > 0) : self.LeyLinesTimer = max(0,self.LeyLinesTimer - time)
+         if (self.T3Timer > 0) : self.T3Timer = max(0,self.T3Timer - time)
+
+
         
 
 
     def PerformActionSetBlackMage(self, timeUnit, TimeLimit):
-
+        ServerTick = 3
+        NextServerTick = 3
         timer = 0
         spellCounter = 0
         TotalPotency = 0
@@ -218,8 +247,11 @@ class BlackMage(player):
                     print("AstralFire " + str(self.AstralFireStack))
                     print("UmbralIce " + str(self.UmbralIceStack))
                     print("Effect list : " + str(self.EffectList))
+                    print("DOT List : " + str(self.DOTList))
                     tempSpell = nextSpell.Cast(self)
-
+                    self.updateCD(tempSpell.CastTime)
+                    self.updateTimer(tempSpell.CastTime)
+                    NextServerTick -= tempSpell.CastTime
                     print(str(tempSpell))
 
                     TotalPotency += tempSpell.Potency #Add potency of spell
@@ -242,13 +274,15 @@ class BlackMage(player):
                 print("AstralFire " + str(self.AstralFireStack))
                 print("UmbralIce " + str(self.UmbralIceStack))
                 print("Effect list : " + str(self.EffectList))
+                print("DOT List : " + str(self.DOTList))
                 #spell is an oGCD
                 tempSpell = nextSpell.Cast(self)
                 TotalPotency += tempSpell.Potency
                 timer += tempSpell.CastTime#For oGCD, set to about 0.5s (more like animation lock)
-
+                self.updateCD(tempSpell.CastTime)
+                self.updateTimer(tempSpell.CastTime)
                 timeBeforeNextGCD = max(0, timeBeforeNextGCD - tempSpell.CastTime)
-
+                NextServerTick -= tempSpell.CastTime
                 if (spellCounter >= len(self.ActionSet)) : 
                     #timer  = TimeLimit
                     break #If no more spell,we out
@@ -259,15 +293,39 @@ class BlackMage(player):
             else:
                 timeBeforeNextGCD-=0.01
 
-            timer+=0.01
+            if(self.GCDLock):
+                timer+=0.01
+                self.updateTimer(0.01)
+                self.updateCD(0.01)
+                NextServerTick -= 0.01
 
             rList = []
             for Check in self.EffectCDList:
                 rList.append(Check(self))
-
+            #print(rList)
+            #print("LeyLines Timer : " + str(self.LeyLinesTimer))
             for i in rList:
-                self.EffectCDList.remove(i)
+                if (i != None):
+                    print(str(i) + "hhhhhhhh")
+                    self.EffectCDList.remove(i)
 
+
+            #Check ServerTick Mechanic
+            if (NextServerTick <= 0):
+                #Do thing
+                NextServerTick = 3 - (timer %3)
+
+                if (self.UmbralIceStack == 1):
+                    self.Mana +=3200
+                elif (self.UmbralIceStack == 2):
+                    self.Mana += 4700
+                elif(self.UmbralIceStack == 3):
+                    self.Mana += 6200
+
+                for DOT in self.DOTList:
+                    tempDOT = DOT.Cast(self)
+                    TotalPotency += tempDOT.Potency
+                    print("Applied DOT with a potency of : " + str(tempDOT.Potency))
 
         return TotalPotency/timer
 
@@ -321,6 +379,7 @@ def LeyLines(Player):
     Player.LeyLinesCD = 90
     Player.LeyLinesTimer = 30
     Player.EffectList.append(LeyLinesEffect)
+    Player.EffectCDList.append(CheckLeyLines)
 
 def SharpCast(Player):
     Player.SharpCastCD = 30
@@ -340,8 +399,16 @@ def Transpose(Player):
         Player.UmbralIceStack = 1
         Player.AstralFireStack = 0
 
+def Thunder3(Player):
+    if(not( T3DOT in Player.DOTList)) : Player.DOTList.append(T3DOT)
+    Player.T3Timer = 24
+    if(not( T3DOT in Player.EffectCDList)) : Player.EffectCDList.append(Thunder3DotCheck)
 
 
+
+#Null Ability (wait)
+
+Wait = BLMAbility(-1, True, 2.19, 2.19, 0, 0, False, False, empty)
 
 #BLMSPELL
 #Fire Spell
@@ -357,6 +424,10 @@ B2 = BLMAbility(6, True, 2.17, 2.17, 140, 200, False, True, empty)#AOE so not us
 B3 = BLMAbility(7, True, 3.07, 2.19, 240, 800, False, True, AddUmbralIce3)
 B4 = BLMAbility(8, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack)
 
+#DOT
+
+T3 = BLMAbility(16, True, 2.19, 2.19, 40, 400, False, False, Thunder3)
+T3DOT = BLMAbility(17, False, 0, 0, 40, 0, False, False, empty)
 #Special Damage Spell
 
 Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, RemovePolyGlotStack)
@@ -373,12 +444,14 @@ Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose)
 
 #ENDBLMSPELL
 
-List = [B3, Eno, F3, Triple, F4, F4, Ley,  F4, Swift, F4, F4 , Despair]
-BLM = BlackMage(2.17, List)
+JpOpener = [Sharp, F3, Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, F4, Despair, B3, B4]
+NoB4Opener = [Sharp, B3, Eno, T3,  F3, Triple, F4, F4, Ley, F4, Swift, F4, F4, Despair, T3, Eno,  F4, Despair, B3, Xeno, B4]
+list = [T3, Sharp, T3, T3, F1, F1, F1]
+BLM = BlackMage(2.19, JpOpener)
 
 #####
 
-print(BLM.PerformActionSetBlackMage(0.1, 30))
+print(BLM.PerformActionSetBlackMage(0.1, 100))
 
 
 
