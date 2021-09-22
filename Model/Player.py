@@ -151,6 +151,26 @@ def IceSpellCheck(Player, Spell):
         return True
     return False
 
+def LeyLinesCheck(Player, Spell):
+    return Player.LeyLinesCD == 0
+
+def TripleCastCheck(Player, Spell):
+    return Player.TripleCastCD == 0
+
+def SharpCastCheck(Player, Spell):
+    return Player.SharpCastCD == 0
+
+def SwiftCastCheck(Player, Spell):
+    return Player.SwiftCastCD ==0
+
+def EnochianCheck(Player, Spell):
+    return (Player.EnochianCD == 0) and ((Player.AstralFireStack >= 1) or (Player.UmbralIceStack >= 1))
+
+def ManaFrontCheck(Player, Spell):
+    return (Player.ManaFrontCD == 0)
+
+def TransposeCheck(Player, Spell):
+    return (Player.TransposeCD == 0)
 
 
 #ACTION.PY
@@ -219,7 +239,7 @@ class BLMAbility(Ability):
 
 class player:
 
-    def __init__(self, GCDTimer, ActionSet, EffectList):
+    def __init__(self, GCDTimer, ActionSet, EffectList,PrePullSet):
         self.GCDTimer = GCDTimer
         self.ActionSet = ActionSet  #List of actions to be performed in order
         self.EffectList = EffectList
@@ -229,13 +249,14 @@ class player:
         self.Mana = 10000
         self.EffectCDList = []
         self.DOTList = []
+        self.PrePullSet = PrePullSet
 
 
 
 class BlackMage(player):
 
-    def __init__(self, GCDTimer, ActionSet):
-        super().__init__(GCDTimer, ActionSet, [AstralFire, UmbralIce])
+    def __init__(self, GCDTimer, ActionSet, PrePullSet):
+        super().__init__(GCDTimer, ActionSet, [AstralFire, UmbralIce], PrePullSet)
         #Special
         self.AstralFireStack = 0
         self.UmbralIceStack = 0
@@ -263,7 +284,7 @@ class BlackMage(player):
         self.SwiftCastCD = 0
         self.EnochianCD = 0
         self.ManaFrontCD = 0
-        self.TranspodeCD = 0
+        self.TransposeCD = 0
 
 
     def updateCD(self, time):
@@ -273,7 +294,7 @@ class BlackMage(player):
         if (self.SwiftCastCD > 0) :self.SwiftCastCD = max(0,self.SwiftCastCD - time)
         if (self.EnochianCD > 0) :self.EnochianCD = max(0,self.EnochianCD - time)
         if (self.ManaFrontCD > 0) :self.ManaFrontCD = max(0,self.ManaFrontCD - time)
-        if (self.TranspodeCD > 0) :self.TranspodeCD = max(0,self.TranspodeCD - time)
+        if (self.TransposeCD > 0) :self.TransposeCD = max(0,self.TransposeCD - time)
 
     def updateTimer(self, time):
          if (self.LeyLinesTimer > 0) : self.LeyLinesTimer = max(0,self.LeyLinesTimer - time)
@@ -291,6 +312,24 @@ class BlackMage(player):
         TotalPotency = 0
         timeBeforeNextGCD = 0
         PolyglotStackCountDown = 0
+
+        #PrePull Part
+
+        for PrePullSpell in self.PrePullSet:
+            #PrePullSpell Object will have at what time before the pull, and the spell itself
+            #For now, it is assume PrePullSet has one oGCD and one GCD
+            print("bruh?")
+            if (PrePullSpell[1].GCD):
+                #last spell before we begin
+                PrePullSpell[1].Cast(self)
+                TotalPotency+= PrePullSpell[1].Potency
+            else:
+                #Spell is OGCD
+                PrePullSpell[1].Cast(self)
+
+                self.updateCD(PrePullSpell[0])
+            print("bruh?")
+
         while(timer < TimeLimit):
 
 
@@ -307,6 +346,7 @@ class BlackMage(player):
                     print("Effect list : " + str(self.EffectList))
                     print("DOT List : " + str(self.DOTList))
                     print("Mana Left : " + str(self.Mana))
+                    print("CD =>  " + str(self.LeyLinesCD) + "  :  " + str(self.SharpCastCD) + "  :  "+ str(self.TripleCastCD)+ "  :  "+ str(self.SwiftCastCD)+ "  :  "+ str(self.EnochianCD)+ "  :  "+ str(self.ManaFrontCD)+ "  :  "+ str(self.TransposeCD))
                     tempSpell = nextSpell.Cast(self)
                     self.updateCD(tempSpell.CastTime)
                     self.updateTimer(tempSpell.CastTime)
@@ -335,6 +375,7 @@ class BlackMage(player):
                 print("Effect list : " + str(self.EffectList))
                 print("DOT List : " + str(self.DOTList))
                 print("Mana Left : " + str(self.Mana))
+                print("CD =>  " + str(self.LeyLinesCD) + "  :  " + str(self.SharpCastCD) + "  :  "+ str(self.TripleCastCD)+ "  :  "+ str(self.SwiftCastCD)+ "  :  "+ str(self.EnochianCD)+ "  :  "+ str(self.ManaFrontCD)+ "  :  "+ str(self.TransposeCD))
 
                 #spell is an oGCD
                 tempSpell = nextSpell.Cast(self)
@@ -478,7 +519,7 @@ def DespairCast(Player):
 
 #Null Ability (wait)
 
-Wait = BLMAbility(-1, True, 2.19, 2.19, 0, 0, False, False, empty, ManaCheck)
+Wait = BLMAbility(-1, True, 5, 5, 0, 0, False, False, empty, ManaCheck)
 
 #BLMSPELL
 #Fire Spell
@@ -504,22 +545,30 @@ Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, empty, PolyglotCheck
 
 #Boosting Ability
 
-Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian, ManaCheck)
-Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast, ManaCheck)
-Triple = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, TripleCast, ManaCheck)
-Sharp = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, SharpCast, ManaCheck)
-Ley = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, LeyLines, ManaCheck)
-Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose, ManaCheck)
-Mana = BLMAbility(18, False, 0.5, 0, 0, 0, False, False, ManaFront, ManaCheck)
+Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian, EnochianCheck)
+Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast, SwiftCastCheck)
+Triple = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, TripleCast, TripleCastCheck)
+Sharp = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, SharpCast, SharpCastCheck)
+Ley = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, LeyLines, LeyLinesCheck)
+Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose, TransposeCheck)
+Mana = BLMAbility(18, False, 0.5, 0, 0, 0, False, False, ManaFront, ManaFrontCheck)
 
 
 #ENDBLMSPELL
 
-JpOpener = [Sharp, F3, Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, Mana,  F4, Despair, B3, B4]
-NoB4Opener = [Sharp, B3, Eno, T3,  F3, Triple, F4, F4, Ley, F4, Swift, F4, F4, Despair, T3, Mana,  F4, Despair, B3, Xeno, B4]
+JpOpener = [Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, Mana,  F4, Despair]
+PrePullJpOpener = [ [10, Sharp], [0, F3]]
+
+NoB4Opener = [Eno, T3,  F3, Triple, F4, F4, Ley, F4, Swift, F4, F4, Despair, T3, Mana,  F4, Despair]
+PrePullNoB4Opener = [ [10, Sharp], [0, B3]]
+
 list = [T3, Sharp, T3, T3, F1, F1, F1]
-Rotation = [Eno, B3, Sharp, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair]
-BLM = BlackMage(2.19, Rotation)
+Rotation = [B3, Sharp, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair]
+
+#print(JpOpener + Rotation)
+
+
+BLM = BlackMage(2.19, JpOpener + Rotation, PrePullJpOpener)
 
 #####
 

@@ -35,10 +35,8 @@ x.tw()
 l = [allo, hey]
 
 l = [1,2,3]
-
-for i in l:
-    if (i == 2) : l.append(4)
-    print(i)
+a = [4,5,6]
+print(a+l)
 
 
 
