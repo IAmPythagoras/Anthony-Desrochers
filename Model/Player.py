@@ -107,7 +107,7 @@ def UmbralHeartEffect(Player, Spell):
     elif(Player.UmbralHeartStack <= 0):
         Player.UmbralHeartStack = 0
         Player.EffectList.remove(UmbralHeartEffect)
-        
+
 
  #Function called to remove effect
 
@@ -122,6 +122,18 @@ def Thunder3DotCheck(Player):
         Player.DOTList.remove(T3DOT)
         Player.T3Timer = 0
         return Thunder3DotCheck
+
+def AFUICheck(Player):
+
+    if(Player.AFUITimer <= 0):
+        Player.AstralFireStack = 0
+        Player.UmbralIceStack = 0
+
+def EnochianLostCheck(Player):
+
+    if(Player.AstralFireStack == 0 and Player.UmbralIceStack == 0):
+        Player.EffectList.remove(Enochian)
+        Player.Enochian = False
 
 
 #RequirementSpellCheck
@@ -299,6 +311,7 @@ class BlackMage(player):
     def updateTimer(self, time):
          if (self.LeyLinesTimer > 0) : self.LeyLinesTimer = max(0,self.LeyLinesTimer - time)
          if (self.T3Timer > 0) : self.T3Timer = max(0,self.T3Timer - time)
+         if (self.AFUITimer > 0) : self.AFUITimer = max(0, self.AFUITimer-time)
 
 
         
@@ -318,7 +331,7 @@ class BlackMage(player):
         for PrePullSpell in self.PrePullSet:
             #PrePullSpell Object will have at what time before the pull, and the spell itself
             #For now, it is assume PrePullSet has one oGCD and one GCD
-            print("bruh?")
+            #print("bruh?")
             if (PrePullSpell[1].GCD):
                 #last spell before we begin
                 PrePullSpell[1].Cast(self)
@@ -328,7 +341,7 @@ class BlackMage(player):
                 PrePullSpell[1].Cast(self)
 
                 self.updateCD(PrePullSpell[0])
-            print("bruh?")
+            #print("bruh?")
 
         while(timer < TimeLimit):
 
@@ -447,6 +460,7 @@ def AddAstralFire1(Player):
 
     if(Player.AstralFireStack >=0 and Player.AstralFireStack <3 and Player.UmbralIceStack == 0):
         Player.AstralFireStack+=1
+        Player.AFUITimer = 15
     elif (Player.AstralFireStack == 0 and Player.UmbralIceStack >=1):
         Player.AstralFireStack = 0
         Player.UmbralIceStack = 0
@@ -454,10 +468,12 @@ def AddAstralFire1(Player):
 def AddAstralFire3(Player):
     Player.AstralFireStack = 3
     Player.UmbralIceStack = 0
+    Player.AFUITimer = 15
 
 def AddUmbralIce3(Player):
     Player.UmbralIceStack = 3
     Player.AstralFireStack = 0
+    Player.AFUITimer = 15
 
 def AddUmbralIce1(Player):
     print("bruh")
@@ -470,6 +486,7 @@ def Enochian(Player):
     Player.Enochian = True
     Player.EnochianCD = 30
     Player.EffectList.append(EnochianEffect)
+    Player.EffectCDList.append(EnochianLostCheck)
 
 def SwiftCast(Player):
     Player.SwiftCastCD = 60
@@ -568,7 +585,7 @@ Rotation = [B3, Sharp, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair]
 #print(JpOpener + Rotation)
 
 
-BLM = BlackMage(2.19, JpOpener + Rotation, PrePullJpOpener)
+BLM = BlackMage(2.19, NoB4Opener + Rotation, PrePullNoB4Opener)
 
 #####
 
