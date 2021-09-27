@@ -6,8 +6,8 @@ from Player import *
 
 class NeuralNetwork(nn.Module):
 
-    def __init__(self):
-        super(NeuralNetwork, self).__init__()
+    def init(self):
+        super(NeuralNetwork, self).init()
 
         self.fc1 = nn.Linear(26, 40)
         self.fc2 = nn.Linear(40, 50)
@@ -30,6 +30,3 @@ env = Fight(BlackMage(2.19, [], [])) #Initiate environment
 net = NeuralNetwork()
 
 print(net)
-
-
-
