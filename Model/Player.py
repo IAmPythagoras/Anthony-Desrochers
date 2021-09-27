@@ -4,6 +4,13 @@
 
 #Black Mage
 
+#Exceptions
+
+class FailedToCast(Exception):
+    pass
+
+
+
 #EFFECT.PY
 
 
@@ -223,7 +230,7 @@ class BLMAbility(Ability):
             print("Was trying to cast : " + str(self.id))
             print("Mana : " + str(Player.Mana))
             print(tempSpell)
-            exit()
+            raise FailedToCast("failed to cast spell")
 
         for effect in newEffect:
             if (effect != None):
@@ -536,40 +543,42 @@ def DespairCast(Player):
 
 #Null Ability (wait)
 
-Wait = BLMAbility(-1, True, 5, 5, 0, 0, False, False, empty, ManaCheck)
+Wait = BLMAbility(0, True, 5, 5, 0, 0, False, False, empty, ManaCheck)
 
 #BLMSPELL
 #Fire Spell
-F1 = BLMAbility(0, True, 2.19, 2.19, 180, 800, True, False, AddAstralFire1, ManaCheck)
-F2 = BLMAbility(1, True, 2.17, 2.17, 140, 200, True, False, empty, ManaCheck)#Will not used, so whatever
+F1 = BLMAbility(1, True, 2.19, 2.19, 180, 800, True, False, AddAstralFire1, ManaCheck)
+#F2 = BLMAbility(1, True, 2.17, 2.17, 140, 200, True, False, empty, ManaCheck)#Will not used, so whatever
 F3 = BLMAbility(2, True, 3.07, 2.19, 240, 2000, True, False, AddAstralFire3, ManaCheck)
 F4 = BLMAbility(3, True, 2.46, 2.19, 300, 800, True, False, empty, FireSpellCheck)
 Despair = BLMAbility(4, True, 2.63, 2.19, 380, 800, True, False, DespairCast, FireSpellCheck)
 
 #Ice Spell
 B1 = BLMAbility(5, True, 2.19, 2.19, 180, 400, False, True, AddUmbralIce1, ManaCheck)#Not used so whatever
-B2 = BLMAbility(6, True, 2.17, 2.17, 140, 200, False, True, empty, ManaCheck)#AOE so not used
-B3 = BLMAbility(7, True, 3.07, 2.19, 240, 800, False, True, AddUmbralIce3, ManaCheck)
-B4 = BLMAbility(8, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack, IceSpellCheck)
+#B2 = BLMAbility(6, True, 2.17, 2.17, 140, 200, False, True, empty, ManaCheck)#AOE so not used
+B3 = BLMAbility(6, True, 3.07, 2.19, 240, 800, False, True, AddUmbralIce3, ManaCheck)
+B4 = BLMAbility(7, True, 2.46, 2.19, 300, 800, False, True, AddUmbralHeartStack, IceSpellCheck)
 
 #DOT
 
-T3 = BLMAbility(16, True, 2.19, 2.19, 40, 400, False, False, Thunder3, ManaCheck)
-T3DOT = BLMAbility(17, False, 0, 0, 40, 0, False, False, empty, ManaCheck)
+T3 = BLMAbility(8, True, 2.19, 2.19, 40, 400, False, False, Thunder3, ManaCheck)
+T3DOT = BLMAbility(9, False, 0, 0, 40, 0, False, False, empty, ManaCheck)
 #Special Damage Spell
 
-Xeno = BLMAbility(9, True, 0.3, 2.19, 750, 0, False, False, empty, PolyglotCheck)
+Xeno = BLMAbility(10, True, 0.3, 2.19, 750, 0, False, False, empty, PolyglotCheck)
 
 #Boosting Ability
 
-Eno = BLMAbility(10, False, 0.5, 0, 0, 0, False, False, Enochian, EnochianCheck)
-Swift = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, SwiftCast, SwiftCastCheck)
-Triple = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, TripleCast, TripleCastCheck)
-Sharp = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, SharpCast, SharpCastCheck)
-Ley = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, LeyLines, LeyLinesCheck)
-Transpo = BLMAbility(15, False, 0, 0, 0, 0, False, False, Transpose, TransposeCheck)
-Mana = BLMAbility(18, False, 0.5, 0, 0, 0, False, False, ManaFront, ManaFrontCheck)
+Eno = BLMAbility(11, False, 0.5, 0, 0, 0, False, False, Enochian, EnochianCheck)
+Swift = BLMAbility(12, False, 0.5, 0, 0, 0, False, False, SwiftCast, SwiftCastCheck)
+Triple = BLMAbility(13, False, 0.5, 0, 0, 0, False, False, TripleCast, TripleCastCheck)
+Sharp = BLMAbility(14, False, 0.5, 0, 0, 0, False, False, SharpCast, SharpCastCheck)
+Ley = BLMAbility(15, False, 0.5, 0, 0, 0, False, False, LeyLines, LeyLinesCheck)
+Transpo = BLMAbility(16, False, 0, 0, 0, 0, False, False, Transpose, TransposeCheck)
+Mana = BLMAbility(17, False, 0.5, 0, 0, 0, False, False, ManaFront, ManaFrontCheck)
 
+
+SpellList = [F1,F3, F4, Despair,B1,B3,B4,T3, T3DOT, Xeno, Eno, Swift, Triple, Sharp, Ley, Transpo, Mana]
 
 #ENDBLMSPELL
 
@@ -589,7 +598,57 @@ BLM = BlackMage(2.19, NoB4Opener + Rotation, PrePullNoB4Opener)
 
 #####
 
-print(BLM.PerformActionSetBlackMage(0.1, 100))
+#print(BLM.PerformActionSetBlackMage(0.1, 100))
+
+
+class Fight:
+
+    #This class will represent an environment the NN will learn in
+
+    def __init__(self, Player : player):
+
+        self.TotalPotency = 0
+        self.TotalTime = 0
+        self.TimeLimit = -1
+        self.Player = Player
+
+    def step(self, Action, CurrentActionList):
+        #This function will return the new state, give the reward (potency per second) and say weither the current try failed and is done
+        #In such a case, potency per second will be set to 0
+        #It will take an action to represent what the agent deided to do
+        #Actions will be numbered from 0 to 18 and represent the Id of the spell it did
+
+        global SpellList #Contains list of spells orderedby ID number
+
+        self.Player.ActionSet += [SpellList[Action]]#Add spell to ActionSet
+        #The program will always recompute the total potency per second with the new added spell (should be changed, but for now lets do it
+        # like that cuz bruh)
+        try:
+            
+            pastState = self.Player
+
+            potencyPerSecond = self.Player.PerformActionSetBlackMage(0.01, self.TimeLimit)
+
+            #Player will be updated by the PerformActionSetBlackMage function, and it will be considered to be the next state
+
+            return self.Player, potencyPerSecond, False
+
+        except FailedToCast:
+            done = True
+            return None, 0, done
+        
+        
+
+
+
+
+
+
+
+
+    
+
+        
 
 
 

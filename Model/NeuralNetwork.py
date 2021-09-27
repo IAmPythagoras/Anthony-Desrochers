@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from Player import *
 
 class NeuralNetwork(nn.Module):
 
@@ -19,10 +20,16 @@ class NeuralNetwork(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
-        x = torch.max(F.relu(self.fc5(x)))
+        x = self.fc5(x)
         return x
 
+
+
+env = Fight(BlackMage(2.19, [], [])) #Initiate environment
 
 net = NeuralNetwork()
 
 print(net)
+
+
+
