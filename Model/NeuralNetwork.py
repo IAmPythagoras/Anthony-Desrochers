@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import numpy as np
 import random
 from torch import optim
 from Player import *
@@ -13,9 +13,11 @@ class NeuralNetwork(nn.Module):
 
     def init(self):
 
-
+        self.replay_memory_size = 10000
         self.initial_epsilon = 0.1
         self.final_epsilon = 0.0001
+        self.minibatchsize = 32
+        self.gamma = 0.99
 
         super(NeuralNetwork, self).init()
 
@@ -38,10 +40,11 @@ character = BlackMage(2.19, [], [])
 env = Fight(character) #Initiate environment
 state = character.getState()
 model = NeuralNetwork()
-
 optimizer = optim.Adam(model.parameters(), lr=1e-6)
+exit()
 criterion = nn.MSELoss()
-
+replay_memory = []
+epsilon = model.initial_epsilon
 #print(net)
 
 ActionList = torch.zero_(0)
@@ -61,4 +64,41 @@ for iteration in range(10):
     ActionList = torch.cat((ActionList, action_index))
     #get nextstate and reward and info
 
-    state, reward, done = env.step(action_index, ActionList)
+    state, reward, done, state_1 = env.step(action_index, ActionList)
+
+    reward = torch.from_numpy(np.array([reward], dtype=np.float32)).unsqueeze(0)
+
+    replay_memory.append((state, action_index, reward, state_1,done))
+
+    if len(replay_memory) > model.replay_memory_size:
+        replay_memory.pop(0)
+
+    epsilon /= 1.1
+
+    minibatch = random.sample(replay_memory, min( len(replay_memory), model.minibatch_size))
+
+    state_batch = torch.cat(tuple(d[0] for d in minibatch)).to(device)
+    action_batch = torch.cat(tuple(d[1] for d in minibatch)).to(device)
+    reward_batch = torch.cat(tuple(d[2] for d in minibatch)).to(device)
+    state_1_batch = torch.cat(tuple(d[3] for d in minibatch)).to(device)
+
+    output_batch = model(state_batch)
+
+    y_batch = torch.cat(tuple(reward_batch[i] if minibatch[i][4]
+                              else reward_batch[i] + model.gamma * torch.max(output_batch[i])
+                              for i in range(len(minibatch))))
+
+    q_value = torch.sum(model(state_batch * action_batch, dim=1))
+
+    optimizer.zero_grad()
+
+    y_batch = y_batch.detach()
+
+    loss = criterion(q_value, y_batch)
+
+    loss.backward()
+    optimizer.step()
+
+    state = state_1
+
+

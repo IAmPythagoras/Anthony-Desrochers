@@ -306,6 +306,44 @@ class BlackMage(player):
         self.TransposeCD = 0
 
 
+    def resetState(self):
+        #Player relative
+        self.EffectList = [AstralFire, UmbralIce]
+        self.Casting = False
+        self.oGCDLock = False
+        self.GCDLock = False
+        self.Mana = 10000
+        self.EffectCDList = []
+        self.DOTList = []
+        #BLM Relative
+        self.AstralFireStack = 0
+        self.UmbralIceStack = 0
+        self.Enochian = False
+        self.PolyglotStack = 0
+        self.AFUITimer = 0
+        self.UmbralHeartStack = 0
+
+        #Prock
+        self.T3Prock = False
+        self.F3Prock = False
+
+        #Ability Effect
+        self.SharpCastStack = 0
+        self.TripleCastStack = 0
+        self.SwiftCastStack = 0
+        self.T3Timer = 0
+        self.F3Timer = 0
+        self.LeyLinesTimer = 0
+
+        #Ability CD
+        self.LeyLinesCD = 0
+        self.SharpCastCD = 0
+        self.TripleCastCD = 0
+        self.SwiftCastCD = 0
+        self.EnochianCD = 0
+        self.ManaFrontCD = 0
+        self.TransposeCD = 0
+
     def getState(self):
         #this function returns the current state of the player
         return [self.AstralFireStack, self.UmbralIceStack, self.Enochian, self.PolyglotStack, self.AFUITimer, self.UmbralHeartStack, self.T3Prock, self.F3Prock, self.SharpCastStack, self.TripleCastStack
@@ -630,12 +668,12 @@ class Fight:
         try:
             
             pastState = self.Player.getState()
-
+            self.Player.resetState()
             potencyPerSecond = self.Player.PerformActionSetBlackMage(0.01, self.TimeLimit)
 
             #Player will be updated by the PerformActionSetBlackMage function, and it will be considered to be the next state
 
-            return self.Player.getState(), potencyPerSecond, False
+            return pastState, potencyPerSecond, False, self.Player.getState()
 
         except FailedToCast:
             done = True
