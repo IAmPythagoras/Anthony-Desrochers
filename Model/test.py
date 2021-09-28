@@ -1,47 +1,10 @@
-def allo(x):
-    print(x)
+import torch
+random_action = False
+output = torch.tensor([0.9, 0.8])
+action_index = [torch.randint(17, torch.Size([]), dtype=torch.int)
+                    if random_action
+                    else torch.argmax(output)][0]
 
-def hey(x):
-    print('hey'+str(x))
+print(action_index)
 
-x = [allo, hey]
-
-
-class test:
-
-    def __init__(self, name : str):
-        self.name = name
-
-    def tw(self):
-        print(self.name)
-
-class test2(test):
-
-    def __init__(self, name, name2):
-        super().__init__(name)
-        self.name2 = name2
-
-    def t(self):
-        print(self.name+self.name2)
-
-x = test("a")
-y = test2("b","c")
-
-y.t()
-
-x.tw()
-
-
-l = [allo, hey]
-
-l = [1,2,3]
-a = [4,5,6]
-print(a+l)
-
-a += [2]
-
-print(a)
-
-
-
-
+print(torch.zeros(0))

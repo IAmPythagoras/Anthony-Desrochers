@@ -2,11 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import random
+from torch import optim
 from Player import *
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class NeuralNetwork(nn.Module):
 
     def init(self):
+
+
+        self.initial_epsilon = 0.1
+        self.final_epsilon = 0.0001
+
         super(NeuralNetwork, self).init()
 
         self.fc1 = nn.Linear(26, 40)
@@ -24,9 +34,31 @@ class NeuralNetwork(nn.Module):
         return x
 
 
+character = BlackMage(2.19, [], [])
+env = Fight(character) #Initiate environment
+state = character.getState()
+model = NeuralNetwork()
 
-env = Fight(BlackMage(2.19, [], [])) #Initiate environment
+optimizer = optim.Adam(model.parameters(), lr=1e-6)
+criterion = nn.MSELoss()
 
-net = NeuralNetwork()
+#print(net)
 
-print(net)
+ActionList = torch.zero_(0)
+for iteration in range(10):
+
+    #get output from neural network
+    output = model(state).to(device)
+
+    #Will do action (either random one, or the one predicted by the model)
+
+    random_action = random.random() <= model.epsilon
+
+    action_index = [torch.randint(17, torch.Size([]), dtype=torch.int)
+                        if random_action
+                        else torch.argmax(output)][0].to(device)
+
+    ActionList = torch.cat((ActionList, action_index))
+    #get nextstate and reward and info
+
+    state, reward, done = env.step(action_index, ActionList)

@@ -306,6 +306,11 @@ class BlackMage(player):
         self.TransposeCD = 0
 
 
+    def getState(self):
+        #this function returns the current state of the player
+        return [self.AstralFireStack, self.UmbralIceStack, self.Enochian, self.PolyglotStack, self.AFUITimer, self.UmbralHeartStack, self.T3Prock, self.F3Prock, self.SharpCastStack, self.TripleCastStack
+        , self.SwiftCastStack, self.T3Timer, self.F3Timer, self.LeyLinesTimer, self.LeyLinesCD, self.SharpCastCD, self.TripleCastCD, self.SwiftCastCD, self.EnochianCD, self.ManaFrontCD, self.TransposeCD
+        ]
     def updateCD(self, time):
         if (self.LeyLinesCD > 0) : self.LeyLinesCD = max(0,self.LeyLinesCD - time)
         if (self.SharpCastCD > 0) :self.SharpCastCD = max(0,self.SharpCastCD - time)
@@ -619,23 +624,22 @@ class Fight:
         #Actions will be numbered from 0 to 18 and represent the Id of the spell it did
 
         global SpellList #Contains list of spells orderedby ID number
-
         self.Player.ActionSet += [SpellList[Action]]#Add spell to ActionSet
         #The program will always recompute the total potency per second with the new added spell (should be changed, but for now lets do it
         # like that cuz bruh)
         try:
             
-            pastState = self.Player
+            pastState = self.Player.getState()
 
             potencyPerSecond = self.Player.PerformActionSetBlackMage(0.01, self.TimeLimit)
 
             #Player will be updated by the PerformActionSetBlackMage function, and it will be considered to be the next state
 
-            return self.Player, potencyPerSecond, False
+            return self.Player.getState(), potencyPerSecond, False
 
         except FailedToCast:
             done = True
-            return None, 0, done
+            return self.Player.getState(), 0, done
         
         
 
