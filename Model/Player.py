@@ -160,7 +160,6 @@ def PolyglotCheck(Player, Spell):
     return False
 
 def FireSpellCheck(Player, Spell):
-    print("Hey brother")
     if (Player.AstralFireStack >= 1 and Player.Enochian and ManaCheck(Player, Spell)):
         return True
     return False
@@ -625,6 +624,9 @@ SpellList = [F1,F3, F4, Despair,B1,B3,B4,T3, T3DOT, Xeno, Eno, Swift, Triple, Sh
 
 #ENDBLMSPELL
 
+PrePullRandomOpener = [[10, Sharp], [0, B3]]
+RandomOpener = [Eno, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair, Mana, F4, Despair]
+
 JpOpener = [Eno, T3, F4, Triple, F4, F4, Ley, F4, Swift, Despair, Mana,  F4, Despair]
 PrePullJpOpener = [ [10, Sharp], [0, F3]]
 
@@ -637,7 +639,7 @@ Rotation = [B3, Sharp, B4, T3, F3, F4, F4, F4, F1, F4, F4, F4, Despair]
 #print(JpOpener + Rotation)
 
 
-BLM = BlackMage(2.19, NoB4Opener + Rotation, PrePullNoB4Opener)
+BLM = BlackMage(2.19, JpOpener, PrePullJpOpener)
 
 #####
 

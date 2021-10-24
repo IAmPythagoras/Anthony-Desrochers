@@ -9,9 +9,9 @@ from Player import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class NeuralNetwork(nn.Module):
+class Agent(nn.Module):
 
-    def init(self):
+    def __init__(self):
 
         self.replay_memory_size = 10000
         self.initial_epsilon = 0.1
@@ -19,13 +19,18 @@ class NeuralNetwork(nn.Module):
         self.minibatchsize = 32
         self.gamma = 0.99
 
-        super(NeuralNetwork, self).init()
+        super(Agent, self).__init__()
 
         self.fc1 = nn.Linear(26, 40)
+        #torch.nn.init.xavier_uniform(self.fc1.weight)
         self.fc2 = nn.Linear(40, 50)
+        #torch.nn.init.xavier_uniform(self.fc2.weight)
         self.fc3 = nn.Linear(50,60)
+        #torch.nn.init.xavier_uniform(self.fc3.weight)
         self.fc4 = nn.Linear(60,40)
-        self.fc5 = nn.Linear(40, 18)#Final layer
+        #torch.nn.init.xavier_uniform(self.fc4.weight)
+        self.fc5 = nn.Linear(40, 18)
+        #torch.nn.init.xavier_uniform(self.fc5.weight)#Final layer
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -39,9 +44,11 @@ class NeuralNetwork(nn.Module):
 character = BlackMage(2.19, [], [])
 env = Fight(character) #Initiate environment
 state = character.getState()
-model = NeuralNetwork()
-optimizer = optim.Adam(model.parameters(), lr=1e-6)
-exit()
+model = Agent().to(device)
+param = model.parameters()
+
+optimizer = optim.Adam(param, lr=1e-6)
+
 criterion = nn.MSELoss()
 replay_memory = []
 epsilon = model.initial_epsilon
