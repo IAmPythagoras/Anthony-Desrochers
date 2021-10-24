@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Agent(nn.Module):
 
     def __init__(self):
-
+        self.number_of_actions = 17
         self.replay_memory_size = 10000
         self.initial_epsilon = 0.1
         self.final_epsilon = 0.0001
@@ -54,11 +54,11 @@ replay_memory = []
 epsilon = model.initial_epsilon
 #print(net)
 
-ActionList = torch.zero_(0)
+ActionList = torch.zeros([model.number_of_actions])
 for iteration in range(10):
-
+    print(state)
     #get output from neural network
-    output = model(state).to(device)
+    output = model(torch.Tensor(state)).to(device)
 
     #Will do action (either random one, or the one predicted by the model)
 
